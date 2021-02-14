@@ -1,0 +1,237 @@
+
+-------------------// Variables //-----------
+DATA TEMP;
+INPUT ID NAME $ SALARY DEPT $ DOJ DATE9. ;
+FORMAT DOJ DATE9. ;
+DATALINES;
+1 Rick 623.3 IT 02APR2001
+2 Dan 515.2 OPS 11JUL2012
+3 Michelle 611 IT 21OCT2000
+4 Ryan 729 HR 30JUL2012
+5 Gary 843.25 FIN 06AUG2000
+6 Tusar 578 IT 01MAR2009
+7 Pranab 632.8 OPS 16AUG1998
+8 Rasmi 722.5 FIN 13SEP2014
+;
+PROC PRINT DATA=TEMP;
+RUN;
+
+-----------------// PLOTS //---------------
+--------------------//HISTOGRAM//---------------------
+proc univariate data=sashelp.cars;
+ histogram horsepower
+ / midpoints = 176 to 350 by 50;
+run;
+
+
+--------------------- /// HIST - Curve Fitting ///------------
+
+proc univariate data=sashelp.cars noprint;
+ histogram horsepower
+ / 
+ normal ( 
+ mu = est
+ sigma = est
+ color = blue
+ w = 2.5 
+ )
+barlabel=percent
+ midpoints = 70 to 550 by 50;
+run;
+
+
+------------------- // BAR Chart //------------------------
+PROC SQL;
+create table CARS1 as
+SELECT make,model,type,invoice,horsepower,length,weight
+ FROM 
+SASHELP.CARS
+WHERE make in ('Audi','BMW')
+;
+RUN;
+
+proc SGPLOT data=work.cars1;
+vbar length ;
+title 'Lengths of cars';
+run;
+quit;
+
+
+-------------  // Stacked BAR /// ----------------------
+
+proc SGPLOT data=work.cars1;
+vbar length /group = type ;
+title 'Lengths of Cars by Types';
+run;
+quit;
+
+
+------------------------- // Pie chart with labels //----------------
+
+PROC TEMPLATE;
+  DEFINE STATGRAPH pie;
+    BEGINGRAPH;
+      LAYOUT REGION;
+        PIECHART CATEGORY = type /
+          DATALABELLOCATION = INSIDE
+          DATALABELCONTENT=ALL
+          CATEGORYDIRECTION = CLOCKWISE
+          DATASKIN= SHEEN 
+          START = 180 NAME = 'pie';
+        DISCRETELEGEND 'pie' /
+          TITLE = 'Car Types';
+      ENDLAYOUT;
+    ENDGRAPH;
+  END;
+RUN;
+PROC SGRENDER DATA = cars1
+          TEMPLATE = pie;
+RUN;
+
+---------------------// Scatterplot with Prediction //----------------
+
+proc sgscatter data =cars1; 
+compare y = Invoice  x =(horsepower length)  
+           / group=type  ellipse =(alpha =0.05 type=predicted); 
+title
+'Average Invoice vs. horsepower for cars by length'; 
+title2
+'-- with 95% prediction ellipse --'
+; 
+format
+Invoice dollar6.0;
+run;
+
+------------------- // Scatter matrix //----- 
+
+PROC sgscatter  DATA=CARS1;
+  matrix horsepower invoice length
+  / group = type;
+
+   title 'Horsepower vs. Invoice vs. Length for car makers by types';
+RUN; 
+
+-----------------------------------------------------
+
+-------------- // Concatination //----------------------
+DATA ITDEPT; 
+  INPUT empid name $ salary  ; 
+DATALINES; 
+1 Rick 623.3 
+3 Mike 611.5 
+6 Tusar 578.6 
+; 
+RUN; 
+DATA NON_ITDEPT; 
+  INPUT empid name $ salary  ; 
+DATALINES; 
+2 Dan 515.2 
+4 Ryan 729.1 
+5 Gary 843.25 
+7 Pranab 632.8 
+8 Rasmi 722.5 
+RUN; 
+DATA All_Dept; 
+  SET ITDEPT NON_ITDEPT; 
+RUN; 
+PROC PRINT DATA=All_Dept; 
+RUN;  
+
+------------------ // Data merge after Sorting // ------------------------
+
+
+data company;
+   input Name $ 1-25 Age 27-28 Gender $ 30;
+   datalines;
+Vincent, Martina          34 F
+Phillipon, Marie-Odile    28 F
+Gunter, Thomas            27 M
+Harbinger, Nicholas       36 M
+Benito, Gisela            32 F
+Rudelich, Herbert         39 M
+Sirignano, Emily          12 F
+Morrison, Michael         32 M
+;
+
+proc sort data=company;
+   by Name;
+run;
+
+data finance;
+   input IdNumber $ 1-11 Name $ 13-40 Salary;
+   datalines;
+074-53-9892 Vincent, Martina             35000
+776-84-5391 Phillipon, Marie-Odile       29750
+929-75-0218 Gunter, Thomas               27500
+446-93-2122 Harbinger, Nicholas          33900
+228-88-9649 Benito, Gisela               28000
+029-46-9261 Rudelich, Herbert            35000
+442-21-8075 Sirignano, Emily             5000
+;
+proc sort data=finance;
+   by Name;
+run;
+proc print data=company;
+   title 'Little Theater Company Roster';
+run;
+
+proc print data=finance;
+   title 'Little Theater Employee Information';
+run;
+
+data employee_info;
+   merge company finance;
+   by name;
+run;
+
+proc print data=employee_info;
+   title 'Little Theater Employee Information';
+   title2 '(including personal and financial information)';
+run;
+
+--------------------------- // Subsetting // ------------------
+
+-------------- // KEEP //----------------------
+
+DATA Employee; 
+  INPUT empid ename $ salary DEPT $ ; 
+DATALINES; 
+1 Rick 623.3 	IT 		 
+2 Dan 515.2 	OPS	
+3 Mike 611.5 	IT 	
+4 Ryan 729.1    HR 
+5 Gary 843.25   FIN 
+6 Tusar 578.6   IT 
+7 Pranab 632.8  OPS
+8 Rasmi 722.5   FIN 
+;
+RUN;
+DATA OnlyDept;
+ SET Employee;
+ KEEP ename DEPT;
+  RUN;
+ PROC PRINT DATA=OnlyDept; 
+RUN;
+
+
+---------------- // DROP //---------------------
+
+DATA Employee; 
+  INPUT empid ename $ salary DEPT $ ; 
+DATALINES; 
+1 Rick 623.3 	IT 		 
+2 Dan 515.2 	OPS	
+3 Mike 611.5 	IT 	
+4 Ryan 729.1    HR 
+5 Gary 843.25   FIN 
+6 Tusar 578.6   IT 
+7 Pranab 632.8  OPS
+8 Rasmi 722.5   FIN 
+;
+RUN;
+DATA OnlyDept;
+ SET Employee;
+ DROP empid salary;
+  RUN;
+ PROC PRINT DATA=OnlyDept; 
+RUN;
